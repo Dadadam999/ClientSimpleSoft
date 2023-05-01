@@ -13,13 +13,14 @@ namespace ClientSimpleSoft
         {
             _connectionString = connectionString;
             _connection = new SqlConnection( _connectionString );
-            _connection.Open();
         }
 
         public void ConnectionClose() => _connection.Close();
+        public void ConnectionOpen() => _connection.Open();
 
         public void Insert( string tableName, Dictionary<string, string> fields, string where )
         {
+            ConnectionOpen();
             _queryBuilder = new StringBuilder();
             _queryBuilder.Append( $"INSERT INTO {tableName} (" );
 
@@ -44,10 +45,12 @@ namespace ClientSimpleSoft
                 command.Parameters.AddWithValue( $"@{field.Key}", field.Value );
 
             command.ExecuteNonQuery();
+            ConnectionClose();
         }
 
         public void Update( string tableName, Dictionary<string, string> fields, string where )
         {
+            ConnectionOpen();
             _queryBuilder = new StringBuilder();
             _queryBuilder.Append( $"UPDATE {tableName} SET " );
 
@@ -64,10 +67,12 @@ namespace ClientSimpleSoft
                 command.Parameters.AddWithValue( $"@{field.Key}", field.Value );
 
             command.ExecuteNonQuery();
+            ConnectionClose();
         }
 
         public SqlDataReader Select( string tableName, string where )
         {
+            ConnectionOpen();
             _queryBuilder = new StringBuilder();
             _queryBuilder.Append( $"SELECT * FROM {tableName}" );
 
@@ -76,11 +81,13 @@ namespace ClientSimpleSoft
 
             SqlCommand command = new( _queryBuilder.ToString(), _connection );
             SqlDataReader reader = command.ExecuteReader();
+            ConnectionClose( );
             return reader;
         }
 
         public SqlDataReader SelectLastDate( string tableName, string TimeCode )
         {
+            ConnectionOpen();
             _queryBuilder = new StringBuilder();
             _queryBuilder.Append( $"SELECT TOP 1 * FROM {tableName}" );
 
@@ -89,6 +96,7 @@ namespace ClientSimpleSoft
 
             SqlCommand command = new( _queryBuilder.ToString(), _connection );
             SqlDataReader reader = command.ExecuteReader();
+            ConnectionClose();
             return reader;
         }
     }

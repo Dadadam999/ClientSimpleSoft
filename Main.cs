@@ -1,7 +1,6 @@
-using Microsoft.VisualBasic;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Text;
 
 namespace ClientSimpleSoft
 {
@@ -16,16 +15,15 @@ namespace ClientSimpleSoft
             InitializeComponent();
             _integration = new Integration();
             _integration.Deserialize();
-            _output.Text = "Файл конфигурации считан.\n";
-            Working();           
+            _output.Text += "Файл конфигурации считан.\n";
+            Working();
         }
 
         public async void Working()
         {
-
             foreach( IntegrationModel integrationModel in _integration.Integrations )
             {
-                _output.Text = $"Выполнение: {integrationModel.Name}.\n";
+                _output.Text += $"Выполнение: {integrationModel.Name}.\n";
                 _httpFetch = new HttpFetch( integrationModel.Domain );
                 _dataBase = new DataBase( integrationModel.ConnectionString );
 
@@ -33,8 +31,8 @@ namespace ClientSimpleSoft
 
                 DateTime dateValue = DateTime.Now;
 
-                if( reader.Read() )
-                    dateValue = reader.GetDateTime( reader.GetOrdinal( integrationModel.DateField ) );
+                //if( reader.Read() )
+                //    dateValue = reader.GetDateTime( reader.GetOrdinal( integrationModel.DateField ) );
 
                 _httpFetch.PrepareData( new Dictionary<string, string>
                 {
@@ -44,7 +42,7 @@ namespace ClientSimpleSoft
                     { "quickapi-date-point", dateValue.ToString() },
                 } );
 
-                _output.Text = "Выполнение запроса на сервер...\n";
+                _output.Text += "Выполнение запроса на сервер...\n";
                 ResponceModel? responce = await _httpFetch.GetResponce( "/wp-json/quickapi/v1/getanswers" );
 
                 if( responce == null )
@@ -66,28 +64,29 @@ namespace ClientSimpleSoft
                         {
                             if( field != null )
                             {
-                                string fieldNameSql = getFieldSql( field.name, integrationModel.FieldsMatching );
+                                Dictionary<string, string> matching = integrationModel.FieldsMatching.ToDictionary( x => x.Item1, x => x.Item2 );
+                                string fieldNameSql = string.Empty;
 
-                                if( fieldNameSql != null )
-                                    fields.Add( fieldNameSql, field.value);
+                                foreach( KeyValuePair<string, string> matchingField in matching )
+                                {
+                                    if( matchingField.Value == field.key )
+                                    {
+                                        fieldNameSql = matchingField.Key;
+                                        break;
+                                    }
+                                }
+
+                                if( !string.IsNullOrEmpty( fieldNameSql ) )
+                                    fields.Add( fieldNameSql, (string)field.value );
                             }
                         }
 
-                        fields.Add( integrationModel.DateField, answer.date );
+                        fields.Add( integrationModel.DateField, (string) answer.date );
                         _dataBase.Insert( integrationModel.TableName, fields, "" );
                     }
                 }
-                _output.Text = "Интеграция выполнена.\n";
+                _output.Text += "Интеграция выполнена.\n";
             }
-        }
-
-        public string getFieldSql( string fieldNameWeb, (string, string)[] matchingFields )
-        {
-            foreach( (string key, string value) in matchingFields )
-                if( value == fieldNameWeb )
-                    return key;
-
-            return string.Empty;
         }
     }
 }
