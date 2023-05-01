@@ -77,6 +77,7 @@ namespace ClientSimpleSoft
                         _dataBase.Insert( integrationModel.TableName, fields, "" );
                     }
                 }
+                _output.Text = "Интеграция выполнена.\n";
             }
         }
 
