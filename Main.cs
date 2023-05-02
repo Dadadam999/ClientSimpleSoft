@@ -64,14 +64,15 @@ namespace ClientSimpleSoft
                         {
                             if( field != null )
                             {
-                                Dictionary<string, string> matching = integrationModel.FieldsMatching.ToDictionary( x => x.Item1, x => x.Item2 );
                                 string fieldNameSql = string.Empty;
 
-                                foreach( KeyValuePair<string, string> matchingField in matching )
+                                foreach( (string Key, string Value) matchingField in integrationModel.FieldsMatching )
                                 {
-                                    if( matchingField.Value == field.key )
+                                    _output.Text += $" {matchingField.Value} == {field.name} " + Environment.NewLine;
+                                    if( matchingField.Value == (string)field.name )
                                     {
                                         fieldNameSql = matchingField.Key;
+                                        _output.Text += matchingField.Key + Environment.NewLine;
                                         break;
                                     }
                                 }
