@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 
 namespace ClientSimpleSoft
 {
@@ -16,10 +17,70 @@ namespace ClientSimpleSoft
             _integration = new Integration();
             _integration.Deserialize();
             _output.Text += "Файл конфигурации считан.\n";
-            Working();
+            RunForArgs();
         }
 
-        public async void Working()
+        private void RunForArgs()
+        {
+            string[] args = Environment.GetCommandLineArgs();
+
+            if( args.Length > 1 )
+            {
+                string arg1 = args[1];
+                
+                if( arg1 == "/getanswer" )
+                {
+                    SyncAnswer();
+                    return;
+                }
+                
+                if( arg1 == "/sendcycles" )
+                {
+                    SyncCycles();
+                    return;
+                }
+            }
+            else
+            {
+                SyncAnswer();
+            }
+
+            Application.Exit();
+        }
+
+        private async void SyncCycles()
+        {
+            foreach( IntegrationModel integrationModel in _integration.Integrations )
+            {
+                _output.Text += $"Выполнение: {integrationModel.Name}.\n";
+                _httpFetch = new HttpFetch( integrationModel.Domain );
+                _dataBase = new DataBase( integrationModel.ConnectionString );
+                SqlDataReader reader = _dataBase.SelectGrouped( integrationModel.TableNameCycles, integrationModel.CyclesListField);
+                List<string?> cyclesArrow = new List<string?>();
+
+                while( reader.Read() )
+                    cyclesArrow.Add( reader[0].ToString() );
+
+                string cyclesJson = JsonConvert.SerializeObject( cyclesArrow );
+
+                _httpFetch.PrepareData( new Dictionary<string, string>
+                {
+                    { "quickapi-secret", integrationModel.SecretKey },
+                    { "quickapi-form-id", integrationModel.FormId },
+                    { "quickapi-integration-id", integrationModel.IntegrationId },
+                    { "quickapi-field-cycles", integrationModel.CycleFormField },
+                    { "quickapi-cycles", cyclesJson }
+                } );
+
+                _output.Text += "Выполнение запроса на сервер...\n";
+                await _httpFetch.GetResponce( "/wp-json/quickapi/v1/syncfield" );
+                _output.Text += "Интеграция выполнена.\n";
+            }
+
+            MessageBox.Show("Метод 2");
+        }
+
+        public async void SyncAnswer()
         {
             foreach( IntegrationModel integrationModel in _integration.Integrations )
             {
@@ -27,12 +88,17 @@ namespace ClientSimpleSoft
                 _httpFetch = new HttpFetch( integrationModel.Domain );
                 _dataBase = new DataBase( integrationModel.ConnectionString );
 
-                SqlDataReader reader = _dataBase.SelectLastDate( integrationModel.TableName, integrationModel.DateField );
+                SqlDataReader reader = _dataBase.SelectLast( integrationModel.TableNamePreview, integrationModel.OrderIdField );
 
-                DateTime dateValue = DateTime.Now;
+                string lastId = "0";
 
-                //if( reader.Read() )
-                //    dateValue = reader.GetDateTime( reader.GetOrdinal( integrationModel.DateField ) );
+                if( reader.Read() )
+                    lastId = reader.GetString( reader.GetOrdinal( integrationModel.DateField ) );
+
+                if( !Regex.IsMatch( integrationModel.OrderIdField, @"^\d+$" ) )
+                    integrationModel.OrderIdField = "0";
+
+                DateTime dateValue = DateTime.Now.AddDays( -1 * Convert.ToInt32( integrationModel.OrderIdField ) ); 
 
                 _httpFetch.PrepareData( new Dictionary<string, string>
                 {
@@ -40,6 +106,7 @@ namespace ClientSimpleSoft
                     { "quickapi-form-id", integrationModel.FormId },
                     { "quickapi-integration-id", integrationModel.IntegrationId },
                     { "quickapi-date-point", dateValue.ToString() },
+                    { "quickapi-last-answer", lastId }
                 } );
 
                 _output.Text += "Выполнение запроса на сервер...\n";
@@ -83,7 +150,7 @@ namespace ClientSimpleSoft
                         }
 
                         fields.Add( integrationModel.DateField, (string) answer.date );
-                        _dataBase.Insert( integrationModel.TableName, fields, "" );
+                        _dataBase.Insert( integrationModel.TableNamePreview, fields, "" );
                     }
                 }
                 _output.Text += "Интеграция выполнена.\n";

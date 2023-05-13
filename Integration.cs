@@ -58,6 +58,9 @@ namespace ClientSimpleSoft
             {
                 foreach( string line in text.Lines )
                 {
+                    if( string.IsNullOrWhiteSpace( line ) )
+                        continue;
+
                     string[] fields = line.Split( ',' );
                     result.Add( (fields[0], fields[1]) );
                 }

@@ -85,15 +85,26 @@ namespace ClientSimpleSoft
             return reader;
         }
 
-        public SqlDataReader SelectLastDate( string tableName, string TimeCode )
+        public SqlDataReader SelectLast( string tableName, string field )
         {
             ConnectionOpen();
             _queryBuilder = new StringBuilder();
             _queryBuilder.Append( $"SELECT TOP 1 * FROM {tableName}" );
 
-            if( !string.IsNullOrEmpty( TimeCode ) )
-                _queryBuilder.Append( $" ORDER BY {TimeCode} DESC" );
+            if( !string.IsNullOrEmpty( field ) )
+                _queryBuilder.Append( $" ORDER BY {field} DESC" );
 
+            SqlCommand command = new( _queryBuilder.ToString(), _connection );
+            SqlDataReader reader = command.ExecuteReader();
+            ConnectionClose();
+            return reader;
+        }
+
+        public SqlDataReader SelectGrouped( string tableName, string field )
+        {
+            ConnectionOpen();
+            _queryBuilder = new StringBuilder();
+            _queryBuilder.Append( $"SELECT {field} FROM {tableName} GROUP BY {field}" );
             SqlCommand command = new( _queryBuilder.ToString(), _connection );
             SqlDataReader reader = command.ExecuteReader();
             ConnectionClose();
