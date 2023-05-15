@@ -45,7 +45,6 @@ namespace ClientSimpleSoft
                 command.Parameters.AddWithValue( $"@{field.Key}", field.Value );
 
             command.ExecuteNonQuery();
-            ConnectionClose();
         }
 
         public void Update( string tableName, Dictionary<string, string> fields, string where )
@@ -67,7 +66,6 @@ namespace ClientSimpleSoft
                 command.Parameters.AddWithValue( $"@{field.Key}", field.Value );
 
             command.ExecuteNonQuery();
-            ConnectionClose();
         }
 
         public SqlDataReader Select( string tableName, string where )
@@ -81,7 +79,6 @@ namespace ClientSimpleSoft
 
             SqlCommand command = new( _queryBuilder.ToString(), _connection );
             SqlDataReader reader = command.ExecuteReader();
-            ConnectionClose( );
             return reader;
         }
 
@@ -96,7 +93,6 @@ namespace ClientSimpleSoft
 
             SqlCommand command = new( _queryBuilder.ToString(), _connection );
             SqlDataReader reader = command.ExecuteReader();
-            ConnectionClose();
             return reader;
         }
 
@@ -107,7 +103,16 @@ namespace ClientSimpleSoft
             _queryBuilder.Append( $"SELECT {field} FROM {tableName} GROUP BY {field}" );
             SqlCommand command = new( _queryBuilder.ToString(), _connection );
             SqlDataReader reader = command.ExecuteReader();
-            ConnectionClose();
+            return reader;
+        }
+
+        public SqlDataReader SelectWhereGrouped( string tableName, string field, string where )
+        {
+            ConnectionOpen();
+            _queryBuilder = new StringBuilder();
+            _queryBuilder.Append( $"SELECT {field} FROM {tableName} WHERE {where} GROUP BY {field}" );
+            SqlCommand command = new( _queryBuilder.ToString(), _connection );
+            SqlDataReader reader = command.ExecuteReader();
             return reader;
         }
     }

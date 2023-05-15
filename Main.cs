@@ -1,5 +1,4 @@
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Text.RegularExpressions;
 
@@ -20,47 +19,45 @@ namespace ClientSimpleSoft
             RunForArgs();
         }
 
-        private void RunForArgs()
+        private async void RunForArgs()
         {
             string[] args = Environment.GetCommandLineArgs();
 
-            if( args.Length > 1 )
+            if( args.Length < 2 )
             {
-                string arg1 = args[1];
-                
-                if( arg1 == "/getanswer" )
-                {
-                    SyncAnswer();
-                    return;
-                }
-                
-                if( arg1 == "/sendcycles" )
-                {
-                    SyncCycles();
-                    return;
-                }
-            }
-            else
-            {
-                SyncAnswer();
+                await SyncAnswer();
+                return;
             }
 
-            Application.Exit();
+            foreach( string arg in args )
+            {
+                if( arg == "getanswer" )
+                    await SyncAnswer();
+
+                if( arg == "sendcycles" )
+                    await SendCycles();
+
+                if( arg == "exit" )
+                    Application.Exit();
+            }            
         }
 
-        private async void SyncCycles()
+        private async Task SendCycles()
         {
             foreach( IntegrationModel integrationModel in _integration.Integrations )
             {
                 _output.Text += $"Выполнение: {integrationModel.Name}.\n";
                 _httpFetch = new HttpFetch( integrationModel.Domain );
                 _dataBase = new DataBase( integrationModel.ConnectionString );
-                SqlDataReader reader = _dataBase.SelectGrouped( integrationModel.TableNameCycles, integrationModel.CyclesListField);
+                using SqlDataReader reader = _dataBase.SelectWhereGrouped( integrationModel.TableNameCycles, integrationModel.CyclesListField, $"{integrationModel.CheckedCyclesField} != 0");
                 List<string?> cyclesArrow = new List<string?>();
 
                 while( reader.Read() )
                     cyclesArrow.Add( reader[0].ToString() );
 
+                _dataBase.ConnectionClose();
+
+                _output.Text += $"Количество циклов: {cyclesArrow.Count}.\n";
                 string cyclesJson = JsonConvert.SerializeObject( cyclesArrow );
 
                 _httpFetch.PrepareData( new Dictionary<string, string>
@@ -76,29 +73,33 @@ namespace ClientSimpleSoft
                 await _httpFetch.GetResponce( "/wp-json/quickapi/v1/syncfield" );
                 _output.Text += "Интеграция выполнена.\n";
             }
-
-            MessageBox.Show("Метод 2");
         }
 
-        public async void SyncAnswer()
+        public async Task SyncAnswer()
         {
             foreach( IntegrationModel integrationModel in _integration.Integrations )
             {
                 _output.Text += $"Выполнение: {integrationModel.Name}.\n";
                 _httpFetch = new HttpFetch( integrationModel.Domain );
                 _dataBase = new DataBase( integrationModel.ConnectionString );
-
-                SqlDataReader reader = _dataBase.SelectLast( integrationModel.TableNamePreview, integrationModel.OrderIdField );
-
+                using SqlDataReader reader = _dataBase.SelectLast( integrationModel.TableNamePreview, integrationModel.OrderIdField );
                 string lastId = "0";
 
-                if( reader.Read() )
-                    lastId = reader.GetString( reader.GetOrdinal( integrationModel.DateField ) );
+                if( reader != null && reader.HasRows && reader.Read() )
+                {
+                    int index = reader.GetOrdinal( integrationModel.OrderIdField );
+                    
+                    if( !reader.IsDBNull( index ) )
+                        lastId = reader.GetValue( index ).ToString();
 
-                if( !Regex.IsMatch( integrationModel.OrderIdField, @"^\d+$" ) )
-                    integrationModel.OrderIdField = "0";
+                }
 
-                DateTime dateValue = DateTime.Now.AddDays( -1 * Convert.ToInt32( integrationModel.OrderIdField ) ); 
+                _dataBase.ConnectionClose();
+
+                if( !Regex.IsMatch( integrationModel.PeriodDate, @"^\d+$" ) )
+                    integrationModel.PeriodDate = "0";
+
+                DateTime dateValue = DateTime.Now.AddDays( -1 * Convert.ToInt32( integrationModel.PeriodDate ) );
 
                 _httpFetch.PrepareData( new Dictionary<string, string>
                 {
@@ -135,22 +136,22 @@ namespace ClientSimpleSoft
 
                                 foreach( (string Key, string Value) matchingField in integrationModel.FieldsMatching )
                                 {
-                                    _output.Text += $" {matchingField.Value} == {field.name} " + Environment.NewLine;
-                                    if( matchingField.Value == (string)field.name )
+                                    if( matchingField.Value == (string) field.name )
                                     {
                                         fieldNameSql = matchingField.Key;
-                                        _output.Text += matchingField.Key + Environment.NewLine;
                                         break;
                                     }
                                 }
 
                                 if( !string.IsNullOrEmpty( fieldNameSql ) )
-                                    fields.Add( fieldNameSql, (string)field.value );
+                                    fields.Add( fieldNameSql, (string) field.value );
                             }
                         }
 
                         fields.Add( integrationModel.DateField, (string) answer.date );
+                        fields.Add( integrationModel.OrderIdField, (string) answer.id );
                         _dataBase.Insert( integrationModel.TableNamePreview, fields, "" );
+                        _dataBase.ConnectionClose();
                     }
                 }
                 _output.Text += "Интеграция выполнена.\n";

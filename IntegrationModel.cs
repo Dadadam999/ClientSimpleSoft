@@ -21,5 +21,6 @@
         public string TableNameCycles { get; set; }
         public string CyclesListField { get; set; }
         public string CycleFormField { get; set; }
+        public string CheckedCyclesField { get; set; }
     }
 }
