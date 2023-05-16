@@ -39,7 +39,7 @@ namespace ClientSimpleSoft
 
                 if( arg == "exit" )
                     Application.Exit();
-            }            
+            }
         }
 
         private async Task SendCycles()
@@ -49,7 +49,7 @@ namespace ClientSimpleSoft
                 _output.Text += $"Выполнение: {integrationModel.Name}.\n";
                 _httpFetch = new HttpFetch( integrationModel.Domain );
                 _dataBase = new DataBase( integrationModel.ConnectionString );
-                using SqlDataReader reader = _dataBase.SelectWhereGrouped( integrationModel.TableNameCycles, integrationModel.CyclesListField, $"{integrationModel.CheckedCyclesField} != 0");
+                using SqlDataReader reader = _dataBase.SelectWhereGrouped( integrationModel.TableNameCycles, integrationModel.CyclesListField, $"{integrationModel.CheckedCyclesField} != 0" );
                 List<string?> cyclesArrow = new List<string?>();
 
                 while( reader.Read() )
@@ -88,7 +88,7 @@ namespace ClientSimpleSoft
                 if( reader != null && reader.HasRows && reader.Read() )
                 {
                     int index = reader.GetOrdinal( integrationModel.OrderIdField );
-                    
+
                     if( !reader.IsDBNull( index ) )
                         lastId = reader.GetValue( index ).ToString();
 

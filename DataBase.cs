@@ -1,4 +1,5 @@
 ﻿using System.Data.SqlClient;
+using System.Globalization;
 using System.Text;
 
 namespace ClientSimpleSoft
@@ -42,7 +43,13 @@ namespace ClientSimpleSoft
 
             using SqlCommand command = new( _queryBuilder.ToString(), _connection );
             foreach( KeyValuePair<string, string> field in fields )
-                command.Parameters.AddWithValue( $"@{field.Key}", field.Value );
+            {
+                DateTime dateValue;
+                if( DateTime.TryParseExact( field.Value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateValue ) )
+                    command.Parameters.AddWithValue( $"@{field.Key}", dateValue );
+                else
+                    command.Parameters.AddWithValue( $"@{field.Key}", field.Value );
+            }
 
             command.ExecuteNonQuery();
         }
