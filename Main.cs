@@ -70,7 +70,7 @@ namespace ClientSimpleSoft
                 } );
 
                 _output.Text += "Выполнение запроса на сервер...\n";
-                await _httpFetch.GetResponce( "/wp-json/quickapi/v1/syncfield" );
+                await _httpFetch.GetResponce( "/wp-json/quickapi/v1/sync-cycles-quickform" );
                 _output.Text += "Интеграция выполнена.\n";
             }
         }
@@ -100,18 +100,20 @@ namespace ClientSimpleSoft
                     integrationModel.PeriodDate = "0";
 
                 DateTime dateValue = DateTime.Now.AddDays( -1 * Convert.ToInt32( integrationModel.PeriodDate ) );
+                string formId = integrationModel.TypeIntegration == "Quick Form" ? "quickapi-form-id" : "quickapi-form-id-yandex";
+                string endpoint = integrationModel.TypeIntegration == "Quick Form" ? "/wp-json/quickapi/v1/get-answers-quickform" : "/wp-json/quickapi/v1/gget-answers-yandex";
 
                 _httpFetch.PrepareData( new Dictionary<string, string>
                 {
                     { "quickapi-secret", integrationModel.SecretKey },
-                    { "quickapi-form-id", integrationModel.FormId },
+                    { formId, integrationModel.FormId },
                     { "quickapi-integration-id", integrationModel.IntegrationId },
                     { "quickapi-date-point", dateValue.ToString() },
                     { "quickapi-last-answer", lastId }
                 } );
 
                 _output.Text += "Выполнение запроса на сервер...\n";
-                ResponceModel? responce = await _httpFetch.GetResponce( "/wp-json/quickapi/v1/getanswers" );
+                ResponceModel? responce = await _httpFetch.GetResponce( endpoint );
 
                 if( responce == null )
                     return;

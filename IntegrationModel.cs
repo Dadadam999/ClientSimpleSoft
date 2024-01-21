@@ -17,6 +17,7 @@
         public string FormId { get; set; }
         public string IntegrationId { get; set; }
 		public string PeriodDate { get; set; }
+        public string TypeIntegration { get; set; }
         //cycles table
         public string TableNameCycles { get; set; }
         public string CyclesListField { get; set; }
