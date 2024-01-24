@@ -46,6 +46,11 @@ namespace ClientSimpleSoft
         {
             foreach( IntegrationModel integrationModel in _integration.Integrations )
             {
+                if( integrationModel.TypeIntegration != "Quick Form" )
+                {
+                    continue;
+                }
+
                 _output.Text += $"Выполнение: {integrationModel.Name}.\n";
                 _httpFetch = new HttpFetch( integrationModel.Domain );
                 _dataBase = new DataBase( integrationModel.ConnectionString );
@@ -101,7 +106,7 @@ namespace ClientSimpleSoft
 
                 DateTime dateValue = DateTime.Now.AddDays( -1 * Convert.ToInt32( integrationModel.PeriodDate ) );
                 string formId = integrationModel.TypeIntegration == "Quick Form" ? "quickapi-form-id" : "quickapi-form-id-yandex";
-                string endpoint = integrationModel.TypeIntegration == "Quick Form" ? "/wp-json/quickapi/v1/get-answers-quickform" : "/wp-json/quickapi/v1/gget-answers-yandex";
+                string endpoint = integrationModel.TypeIntegration == "Quick Form" ? "/wp-json/quickapi/v1/get-answers-quickform" : "/wp-json/quickapi/v1/get-answers-yandex";
 
                 _httpFetch.PrepareData( new Dictionary<string, string>
                 {
