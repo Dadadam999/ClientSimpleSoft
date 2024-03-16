@@ -102,7 +102,7 @@ namespace ClientSimpleSoft
         {
             foreach( IntegrationModel integrationModel in _integration.Integrations )
             {
-                if(!integrationModel.IsEnabled) 
+                if( !integrationModel.IsEnabled )
                 {
                     continue;
                 }
@@ -110,7 +110,13 @@ namespace ClientSimpleSoft
                 _output.Text += $"Выполнение: {integrationModel.Name}.\n";
                 _httpFetch = new HttpFetch( integrationModel.Domain );
                 _dataBase = new DataBase( integrationModel.ConnectionString );
-                using SqlDataReader reader = _dataBase.SelectLast( integrationModel.TableNamePreview, integrationModel.OrderIdField, $"{integrationModel.FormIdField} = {integrationModel.FormId}" );
+
+                using SqlDataReader reader = _dataBase.SelectLast(
+                    integrationModel.TableNamePreview,
+                    integrationModel.OrderIdField,
+                    $"{integrationModel.FormIdField} = {integrationModel.FormId}"
+                );
+
                 string lastId = "0";
 
                 if( reader != null && reader.HasRows && reader.Read() )
@@ -144,8 +150,8 @@ namespace ClientSimpleSoft
                 };
 
                 Logging.Create( new Log( "API prepare", string.Join( " ", data ) ) );
-                
-                if( integrationModel.TypeIntegration  == "Quick Form" ) 
+
+                if( integrationModel.TypeIntegration  == "Quick Form" )
                 {
                     _httpFetch.PrepareDataAsFormData( data );
                 }
@@ -153,7 +159,7 @@ namespace ClientSimpleSoft
                 {
                     _httpFetch.PrepareDataAsJson( data );
                 }
-                
+
                 _output.Text += "Выполнение запроса на сервер...\n";
                 ResponceModel? responce = await _httpFetch.GetResponce( endpoint );
 
