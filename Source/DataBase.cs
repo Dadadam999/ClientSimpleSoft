@@ -110,11 +110,14 @@ namespace ClientSimpleSoft
             return reader;
         }
 
-        public SqlDataReader SelectLast( string tableName, string field )
+        public SqlDataReader SelectLast( string tableName, string field, string where = "" )
         {
             ConnectionOpen();
             _queryBuilder = new StringBuilder();
             _queryBuilder.Append( $"SELECT TOP 1 * FROM {tableName}" );
+
+            if( !string.IsNullOrEmpty( where ) )
+                _queryBuilder.Append( $" WHERE {where}" );
 
             if( !string.IsNullOrEmpty( field ) )
                 _queryBuilder.Append( $" ORDER BY {field} DESC" );

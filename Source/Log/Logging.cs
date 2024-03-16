@@ -2,7 +2,13 @@
 {
     public static class Logging
     {
-        private static string filePath = "lastlog.txt";
+        private static string filePath
+        {
+            get
+            {
+                return $"log_{DateTime.Now:yyyyMMddHHmmss}.txt";
+            }
+        }
 
         public static void Create( Log log )
         {
